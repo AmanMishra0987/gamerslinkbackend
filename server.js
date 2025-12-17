@@ -35,14 +35,10 @@ const app = express();
 // Allowed origins (CORS + Socket.IO). Configure on Render with CORS_ORIGINS (comma-separated)
 // and/or CLIENT_URL.
 const defaultOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://127.0.0.1:3000',
-  // previous deployed frontends (keep as safe defaults)
-  'https://arc-frontend-fyahengy.g2frdjbb.centralindia-01.azurewebsites.net',
-  'https://arc-frontend.azurewebsites.net',
-  'https://arc.squadhunt.com',
-  'http://arc.squadhunt.com',
+  
+  'https://gamerslink-drab.vercel.app',
+ 
+  
 ];
 
 const envOrigins = [
