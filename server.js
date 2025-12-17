@@ -32,6 +32,18 @@ connectDB();
 
 const app = express();
 
+// Trust the first proxy in production (e.g. Render / nginx / load balancers).
+// This ensures req.ip and rate limiting work correctly when X-Forwarded-For is present.
+// Override via TRUST_PROXY env var (examples: "1", "2", "true", "false").
+if (process.env.TRUST_PROXY !== undefined) {
+  const raw = String(process.env.TRUST_PROXY).trim().toLowerCase();
+  if (raw === 'true') app.set('trust proxy', true);
+  else if (raw === 'false') app.set('trust proxy', false);
+  else if (!Number.isNaN(Number(raw))) app.set('trust proxy', Number(raw));
+} else if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Database connection check middleware
 app.use((req, res, next) => {
   if (mongoose.connection.readyState !== 1) {
@@ -48,17 +60,7 @@ const server = createServer(app);
 const io = new Server(server, {
   cors: {
     origin: [
-      "http://localhost:3000",
-      "http://localhost:3001", 
-      "http://127.0.0.1:3000",
-      "http://192.168.1.8:3000",
-      "http://192.168.0.0/16",
-      "http://10.0.0.0/8",
-      "http://172.16.0.0/12",
-      "https://arc-frontend-fyahengy.g2frdjbb.centralindia-01.azurewebsites.net",
-      "https://arc-frontend.azurewebsites.net",
-      "https://arc.squadhunt.com",
-      "http://arc.squadhunt.com"
+    
     ],
     methods: ["GET", "POST"],
     credentials: true
@@ -131,17 +133,7 @@ app.use(limiter);
 // CORS for production deployment
 app.use(cors({
   origin: [
-    "http://localhost:3000", 
-    "http://localhost:3001", 
-    "http://127.0.0.1:3000",
-    "http://192.168.1.8:3000",
-    "http://192.168.0.0/16",
-    "http://10.0.0.0/8",
-    "http://172.16.0.0/12",
-    "https://arc-frontend-fyahengy.g2frdjbb.centralindia-01.azurewebsites.net",
-    "https://arc-frontend.azurewebsites.net",
-    "https://arc.squadhunt.com",
-    "http://arc.squadhunt.com"
+    
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -159,6 +151,15 @@ app.use('/uploads', express.static('uploads'));
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// Root route (prevents noisy 404s on platforms that probe "/")
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Gaming Social Platform API',
+    health: '/api/health'
+  });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

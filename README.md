@@ -75,7 +75,7 @@ backend/
 ## 🔧 Setup Instructions
 
 ### 1. Environment Variables
-Create a `.env` file in the backend directory:
+Create a `.env` file in the backend directory (copy `env.example` to `.env`). **Never commit `.env`**:
 
 ```env
 # Database
