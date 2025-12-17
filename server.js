@@ -32,6 +32,28 @@ connectDB();
 
 const app = express();
 
+// Allowed origins (CORS + Socket.IO). Configure on Render with CORS_ORIGINS (comma-separated)
+// and/or CLIENT_URL.
+const defaultOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  // previous deployed frontends (keep as safe defaults)
+  'https://arc-frontend-fyahengy.g2frdjbb.centralindia-01.azurewebsites.net',
+  'https://arc-frontend.azurewebsites.net',
+  'https://arc.squadhunt.com',
+  'http://arc.squadhunt.com',
+];
+
+const envOrigins = [
+  process.env.CLIENT_URL,
+  ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
+]
+  .map((s) => (s ? String(s).trim() : ''))
+  .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...envOrigins, ...defaultOrigins]));
+
 // Trust the first proxy in production (e.g. Render / nginx / load balancers).
 // This ensures req.ip and rate limiting work correctly when X-Forwarded-For is present.
 // Override via TRUST_PROXY env var (examples: "1", "2", "true", "false").
@@ -60,7 +82,7 @@ const server = createServer(app);
 const io = new Server(server, {
   cors: {
     origin: [
-    
+      ...allowedOrigins,
     ],
     methods: ["GET", "POST"],
     credentials: true
@@ -132,9 +154,12 @@ app.use(limiter);
 
 // CORS for production deployment
 app.use(cors({
-  origin: [
-    
-  ],
+  origin(origin, callback) {
+    // allow non-browser clients (curl/postman) which send no Origin header
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -154,10 +179,12 @@ if (process.env.NODE_ENV === 'development') {
 
 // Root route (prevents noisy 404s on platforms that probe "/")
 app.get('/', (req, res) => {
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
   res.status(200).json({
     success: true,
     message: 'Gaming Social Platform API',
-    health: '/api/health'
+    baseUrl,
+    health: `${baseUrl}/api/health`
   });
 });
 

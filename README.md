@@ -115,6 +115,11 @@ npm start
 
 ## 📚 API Documentation
 
+### Base URL (production)
+Use your deployed Render backend as the base URL:
+
+- `https://gamerslinkbackend.onrender.com`
+
 ### Authentication Endpoints
 ```
 POST /api/auth/register     # Register new user
